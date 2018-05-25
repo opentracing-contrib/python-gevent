@@ -19,7 +19,8 @@ class TracedGreenlet(gevent.Greenlet):
 
     def __init__(self, *args, **kwargs):
         super(TracedGreenlet, self).__init__(*args, **kwargs)
-        self._parent_span = None # TracedGreenlet.__tracer.active_span()
+        scope_manager = TracedGreenlet.__tracer.scope_manager
+        scope_manager._set_greenlet_scope(scope_manager.active, greenlet=self)
 
     @classmethod
     def _get_tracer(cls):
@@ -28,24 +29,3 @@ class TracedGreenlet(gevent.Greenlet):
     @classmethod
     def _set_tracer(cls, tracer):
         cls.__tracer = tracer
-
-    def run(self):
-        """Run the actual greenlet method. Although ``gevent``
-        does not support this method being overriden,
-        we do so as we are simply decorating it to handle
-        active span management.
-        """
-        #with TracedGreenlet.__tracer.make_active(self._parent_span):
-        super(TracedGreenlet, self).run()
-
-    def parent_span(self):
-        """
-        Return the captured parent ``Span`` for this greenlet, if any.
-        """
-        return self._parent_span
-
-    def set_parent_span(self, parent_span):
-        """
-        Manually sets the parent ``Span`` for this greenlet.
-        """
-        self._parent_span = parent_span
